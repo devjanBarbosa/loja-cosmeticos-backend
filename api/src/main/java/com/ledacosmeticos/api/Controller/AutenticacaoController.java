@@ -17,7 +17,6 @@ import com.ledacosmeticos.api.Security.TokenService;
 
 @RestController
 @RequestMapping("/login")
-@CrossOrigin(origins = "http://localhost:4200") // Permite acesso do nosso frontend
 public class AutenticacaoController {
 
     @Autowired

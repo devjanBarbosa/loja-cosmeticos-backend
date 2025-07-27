@@ -28,13 +28,7 @@ public class PedidoService {
     @Autowired
     private ProdutoRepository produtoRepository; 
 
-   // Dentro de PedidoService.java
 
-// Dentro de PedidoService.java
-
-// Dentro de PedidoService.java
-
-// Dentro de PedidoService.java
 
 @Transactional
 public Pedido criar(Pedido pedido) {

@@ -16,7 +16,6 @@ import com.ledacosmeticos.api.Service.PedidoService;
 
 @RestController
 @RequestMapping("/api/pedidos")
-@CrossOrigin(origins = "http://localhost:4200") // Permite acesso do nosso frontend
 public class PedidoController {
 
     @Autowired
