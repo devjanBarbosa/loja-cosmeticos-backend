@@ -4,6 +4,7 @@ import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails; // Importe UserDetails
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.ledacosmeticos.api.Repository.LojistaRepository;
@@ -29,19 +30,25 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         if (tokenJWT != null) {
             var subject = tokenService.getSubject(tokenJWT);
-            var lojista = lojistaRepository.findByEmail(subject);
+            // Usamos UserDetails, que é o tipo de retorno do nosso repositório
+            UserDetails lojista = lojistaRepository.findByEmail(subject);
 
-            var authentication = new UsernamePasswordAuthenticationToken(lojista, null, lojista.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // --- A VERIFICAÇÃO DE SEGURANÇA QUE FALTAVA ---
+            if (lojista != null) {
+                // Se o usuário existe, nós o autenticamos na sessão atual
+                var authentication = new UsernamePasswordAuthenticationToken(lojista, null, lojista.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
+        // Continua a cadeia de filtros, com ou sem autenticação
         filterChain.doFilter(request, response);
     }
 
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null) {
-            return authorizationHeader.replace("Bearer ", "");
+            return authorizationHeader.replace("Bearer ", "").trim();
         }
         return null;
     }

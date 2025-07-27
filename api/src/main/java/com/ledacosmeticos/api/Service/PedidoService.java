@@ -2,11 +2,14 @@ package com.ledacosmeticos.api.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ledacosmeticos.api.DTO.ItemPedidoResponseDTO;
+import com.ledacosmeticos.api.DTO.PedidoResponseDTO;
 import com.ledacosmeticos.api.Model.ItemPedido;
 import com.ledacosmeticos.api.Model.ItemPedidoId;
 import com.ledacosmeticos.api.Model.Pedido;
@@ -81,4 +84,35 @@ public Pedido criar(Pedido pedido) {
  
     return pedidoRepository.save(pedido);
   }
+
+   
+     public List<PedidoResponseDTO> listarTodos() {
+        // 1. Busca todos os Pedidos (Entidades) do banco
+        List<Pedido> pedidos = pedidoRepository.findAll();
+        
+        // 2. Converte cada Pedido (Entidade) para um PedidoResponseDTO
+        return pedidos.stream()
+                      .map(this::convertToDto)
+                      .collect(Collectors.toList());
+    }
+
+    // --- NOVO MÉTODO PRIVADO PARA FAZER A CONVERSÃO ---
+    private PedidoResponseDTO convertToDto(Pedido pedido) {
+        List<ItemPedidoResponseDTO> itemDtos = pedido.getItens().stream()
+                .map(item -> new ItemPedidoResponseDTO(
+                        item.getProduto().getNome(),
+                        item.getQuantidade(),
+                        item.getPrecoUnitario()
+                ))
+                .collect(Collectors.toList());
+
+        return new PedidoResponseDTO(
+                pedido.getId().toString(),
+                pedido.getDataDoPedido(),
+                pedido.getNomeCliente(),
+                pedido.getStatus(),
+                pedido.getValorTotal(),
+                itemDtos
+        );
+    }
 }
