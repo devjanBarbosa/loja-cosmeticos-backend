@@ -2,6 +2,9 @@ package com.ledacosmeticos.api.Model;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +21,9 @@ public class Pedido {
     private Double valorTotal;
     @Enumerated(EnumType.STRING)
     private TipoEntrega tipoEntrega;
+
+
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<ItemPedido> itens;
 }

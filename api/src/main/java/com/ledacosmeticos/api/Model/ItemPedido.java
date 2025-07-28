@@ -1,4 +1,6 @@
 package com.ledacosmeticos.api.Model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +12,8 @@ public class ItemPedido {
 
     @EmbeddedId
     private ItemPedidoId id;
-    @ManyToOne @MapsId("pedidoId") @JoinColumn(name = "pedido_id")
+    
+    @JsonBackReference @ManyToOne @MapsId("pedidoId") @JoinColumn(name = "pedido_id")
 
     private Pedido pedido;
     

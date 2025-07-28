@@ -2,6 +2,7 @@ package com.ledacosmeticos.api.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,4 +110,11 @@ public Pedido criar(Pedido pedido) {
                 itemDtos
         );
     }
+    // Adicione este novo método à sua classe PedidoService
+
+public PedidoResponseDTO buscarPorId(UUID id) {
+    Pedido pedido = pedidoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Encomenda não encontrada com ID: " + id));
+    return convertToDto(pedido);
+}
 }

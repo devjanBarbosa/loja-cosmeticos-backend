@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import com.ledacosmeticos.api.Model.Perfil;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

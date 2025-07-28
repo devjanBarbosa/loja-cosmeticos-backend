@@ -1,7 +1,7 @@
 package com.ledacosmeticos.api.Config;
 
 import com.ledacosmeticos.api.Security.SecurityFilter;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,10 +9,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,88 +26,55 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // Habilita @PreAuthorize e @PostAuthorize
 public class SecurityConfig {
 
-    private final SecurityFilter securityFilter;
-    private final UserDetailsService userDetailsService;
+    // Injeção via @Autowired (ou construtor, como preferir)
+    @Autowired
+    private SecurityFilter securityFilter;
 
-    @Value("${app.cors.allowed-origins:http://localhost:4200}")
-    private String[] allowedOrigins;
-
-    // Injeção por construtor (recomendado ao invés de @Autowired)
-    public SecurityConfig(SecurityFilter securityFilter, UserDetailsService userDetailsService) {
-        this.securityFilter = securityFilter;
-        this.userDetailsService = userDetailsService;
-    }
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // Desabilita CSRF para APIs REST
-                .csrf(AbstractHttpConfigurer::disable)
-                
-                // Configuração CORS
+                .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 
-                // Configuração de sessão stateless
-                .sessionManagement(session -> 
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                
-                // Headers de segurança (Spring Security 6.1+)
-                .headers(headers -> headers
-                    .httpStrictTransportSecurity(hsts -> hsts
-                        .maxAgeInSeconds(31536000)
-                    )
-                )
-                
-                // Configuração de autorização
+                // --- REGRAS DE AUTORIZAÇÃO RESTAURADAS ---
                 .authorizeHttpRequests(authorize -> authorize
-                    // Endpoints públicos
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/register").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
-                    
-                    // Endpoints de saúde/monitoramento (se necessário)
-                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                    
-                    // Swagger/OpenAPI (se necessário)
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                    
-                    // Todos os outros endpoints requerem autenticação
-                    .anyRequest().authenticated()
+                        // Endpoints Públicos (não precisam de login)
+                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                        
+                        // Endpoints Protegidos (precisam de login e/ou role específica)
+                        // Exemplo: Apenas admins podem criar/editar/deletar produtos
+                        .requestMatchers(HttpMethod.POST, "/api/produtos").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasRole("ADMIN")
+                        
+                        // Exemplo: Apenas admins podem ver a lista de todas as encomendas
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasRole("ADMIN")
+
+                        // Qualquer outra requisição precisa estar autenticada
+                        .anyRequest().authenticated()
                 )
-                
-                // Provider de autenticação
+                // Adiciona o provedor de autenticação e o filtro JWT
                 .authenticationProvider(authenticationProvider())
-                
-                // Filtro de segurança customizado
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-                
-                // Tratamento de exceções de autenticação/autorização
-                .exceptionHandling(exceptions -> exceptions
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        response.setStatus(401);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"error\":\"Não autorizado\",\"message\":\"" + authException.getMessage() + "\"}");
-                    })
-                    .accessDeniedHandler((request, response, accessDeniedException) -> {
-                        response.setStatus(403);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"error\":\"Acesso negado\",\"message\":\"" + accessDeniedException.getMessage() + "\"}");
-                    })
-                )
-                
                 .build();
     }
-    
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-        authProvider.setHideUserNotFoundExceptions(false); // Para debugging, remover em produção
         return authProvider;
     }
 
@@ -120,42 +85,16 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Strength 12 para maior segurança
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Origens permitidas (configurável via properties)
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        
-        // Métodos HTTP permitidos
-        configuration.setAllowedMethods(Arrays.asList(
-            HttpMethod.GET.name(),
-            HttpMethod.POST.name(),
-            HttpMethod.PUT.name(),
-            HttpMethod.PATCH.name(),
-            HttpMethod.DELETE.name(),
-            HttpMethod.OPTIONS.name()
-        ));
-        
-        // Headers permitidos
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        
-        // Headers expostos para o cliente
-        configuration.setExposedHeaders(Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "X-Total-Count"
-        ));
-        
-        // Permitir credenciais
         configuration.setAllowCredentials(true);
-        
-        // Cache do preflight por 1 hora
-        configuration.setMaxAge(3600L);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
