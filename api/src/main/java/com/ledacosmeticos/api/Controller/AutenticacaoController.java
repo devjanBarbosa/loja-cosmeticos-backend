@@ -16,7 +16,7 @@ import com.ledacosmeticos.api.Model.Lojista;
 import com.ledacosmeticos.api.Security.TokenService;
 
 @RestController
-@RequestMapping("/login")
+@RequestMapping("/api")
 public class AutenticacaoController {
 
     @Autowired
@@ -25,15 +25,16 @@ public class AutenticacaoController {
     @Autowired
     private TokenService tokenService; // Injetamos nosso serviço de token
 
-    @PostMapping
-    public ResponseEntity efetuarLogin(@RequestBody DadosAutenticacao dados) {
-        var authenticationToken = new UsernamePasswordAuthenticationToken(dados.email(), dados.senha());
-        var authentication = manager.authenticate(authenticationToken);
+   // Dentro de AutenticacaoController.java
+@PostMapping("/login")
+public ResponseEntity efetuarLogin(@RequestBody DadosAutenticacao dados) {
+    System.out.println("\n--- [AutenticacaoController] TENTATIVA DE LOGIN RECEBIDA PARA O EMAIL: " + dados.email());
+    var authenticationToken = new UsernamePasswordAuthenticationToken(dados.email(), dados.senha());
+    var authentication = manager.authenticate(authenticationToken);
 
-        // Pega o usuário que foi autenticado e gera o token para ele
-        var tokenJWT = tokenService.gerarToken((Lojista) authentication.getPrincipal());
-        
-        // Devolve uma resposta 200 OK com o token no corpo da resposta
-        return ResponseEntity.ok(new DadosTokenJWT(tokenJWT));
-    }
+    var tokenJWT = tokenService.gerarToken((Lojista) authentication.getPrincipal());
+    System.out.println("--- [AutenticacaoController] TOKEN GERADO COM SUCESSO ---");
+
+    return ResponseEntity.ok(new DadosTokenJWT(tokenJWT));
+}
 }
