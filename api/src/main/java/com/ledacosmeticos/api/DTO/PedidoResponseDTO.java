@@ -8,6 +8,7 @@ public record PedidoResponseDTO(
     String id,
     LocalDateTime dataDoPedido,
     String nomeCliente,
+    String whatsappCliente, // <-- ADICIONE ESTA LINHA
     StatusPedido status,
     Double valorTotal,
     List<ItemPedidoResponseDTO> itens

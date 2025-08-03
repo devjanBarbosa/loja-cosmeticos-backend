@@ -28,43 +28,44 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Injeção via @Autowired (ou construtor, como preferir)
     @Autowired
     private SecurityFilter securityFilter;
 
     @Autowired
     private UserDetailsService userDetailsService;
 
-    @Bean
+      @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 
-                // --- REGRAS DE AUTORIZAÇÃO RESTAURADAS ---
                 .authorizeHttpRequests(authorize -> authorize
-                        // Endpoints Públicos (não precisam de login)
+                        // --- REGRAS REORGANIZADAS ---
+
+                        // 1. Permite todas as requisições OPTIONS primeiro.
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        
+                        // 2. Define todos os endpoints PÚBLICOS.
                         .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categorias/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        
-                        // Endpoints Protegidos (precisam de login e/ou role específica)
-                        // Exemplo: Apenas admins podem criar/editar/deletar produtos
+                        .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll() // Clientes podem VER a lista de categorias
+                        .requestMatchers(HttpMethod.POST, "/api/categorias").hasRole("ADMIN") // Apenas admins podem CRIAR
+                        .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
+                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN") // Apenas admins podem 
                         .requestMatchers(HttpMethod.POST, "/api/produtos").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/upload").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasRole("ADMIN")
-                        
-                        // Exemplo: Apenas admins podem ver a lista de todas as encomendas
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/**").hasRole("ADMIN")
 
-                        // Qualquer outra requisição precisa estar autenticada
+                        // 4. Qualquer outra requisição precisa estar autenticada.
                         .anyRequest().authenticated()
                 )
-                // Adiciona o provedor de autenticação e o filtro JWT
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -91,10 +92,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // A "lista de permissões"
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Métodos permitidos
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Cabeçalhos permitidos
         configuration.setAllowedHeaders(List.of("*"));
+        // Permite o envio de credenciais (como tokens)
         configuration.setAllowCredentials(true);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

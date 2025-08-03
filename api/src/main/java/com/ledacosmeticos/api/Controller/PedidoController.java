@@ -40,8 +40,25 @@ public class PedidoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable UUID id) {
-    PedidoResponseDTO pedido = pedidoService.buscarPorId(id);
-    return ResponseEntity.ok(pedido);
+public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable UUID id) {
+    try {
+        PedidoResponseDTO pedido = pedidoService.buscarPorId(id);
+        return ResponseEntity.ok(pedido);
+    } catch (RuntimeException e) {
+        // Se o serviço lançar a exceção, retornamos um 404 Not Found
+        return ResponseEntity.notFound().build();
+    }
 }
+
+@PatchMapping("/{id}/concluir")
+    public ResponseEntity<PedidoResponseDTO> concluirPedido(@PathVariable UUID id) {
+        try {
+            PedidoResponseDTO pedidoAtualizado = pedidoService.concluirPedido(id);
+            return ResponseEntity.ok(pedidoAtualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
 }

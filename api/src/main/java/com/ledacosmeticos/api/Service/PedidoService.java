@@ -6,8 +6,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.ledacosmeticos.api.DTO.ItemPedidoResponseDTO;
 import com.ledacosmeticos.api.DTO.PedidoResponseDTO;
@@ -105,16 +108,27 @@ public Pedido criar(Pedido pedido) {
                 pedido.getId().toString(),
                 pedido.getDataDoPedido(),
                 pedido.getNomeCliente(),
+                pedido.getWhatsappCliente(), // <-- ADICIONE ESTA LINHA
                 pedido.getStatus(),
                 pedido.getValorTotal(),
                 itemDtos
         );
     }
-    // Adicione este novo método à sua classe PedidoService
+
 
 public PedidoResponseDTO buscarPorId(UUID id) {
-    Pedido pedido = pedidoRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Encomenda não encontrada com ID: " + id));
-    return convertToDto(pedido);
-}
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Encomenda não encontrada com ID: " + id));
+        // Reutilizamos o mesmo método de conversão que já temos!
+        return convertToDto(pedido);
+    }
+
+    @Transactional
+    public PedidoResponseDTO concluirPedido(UUID id) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Encomenda não encontrada com ID: " + id));
+        pedido.setStatus(StatusPedido.ENTREGUE);
+        pedidoRepository.save(pedido);
+        return convertToDto(pedido);
+    }
 }
