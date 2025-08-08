@@ -2,6 +2,7 @@ package com.ledacosmeticos.api.Controller;
 
 import com.ledacosmeticos.api.DTO.PedidoResponseDTO;
 import com.ledacosmeticos.api.Model.Pedido;
+import com.ledacosmeticos.api.Model.StatusPedido;
 import com.ledacosmeticos.api.Service.PedidoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,19 +19,17 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @PostMapping
-    public ResponseEntity<Pedido> criarPedido(@RequestBody Pedido pedido) {
-        // --- INÍCIO DA MELHORIA ---
+    // --- CORREÇÃO AQUI ---
+    // Adicionámos o nome "pedidoDTO" à variável
+    public ResponseEntity<Pedido> criarPedido(@RequestBody PedidoRequestDTO pedidoDTO) { 
         try {
-            Pedido novoPedido = pedidoService.criar(pedido);
+            // Agora a variável 'pedidoDTO' existe e pode ser usada
+            Pedido novoPedido = pedidoService.criar(pedidoDTO); 
             return ResponseEntity.status(201).body(novoPedido);
         } catch (RuntimeException e) {
-            // Este log vai mostrar-nos a causa exata do erro!
-            System.err.println("### ERRO AO CRIAR PEDIDO: " + e.getMessage());
-            e.printStackTrace(); // Imprime o stack trace completo para depuração
-            // Retorna uma resposta de erro 400 (Bad Request), que é mais apropriada
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(null); 
         }
-        // --- FIM DA MELHORIA ---
     }
 
     @GetMapping
@@ -40,25 +39,28 @@ public class PedidoController {
     }
 
     @GetMapping("/{id}")
-public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable UUID id) {
-    try {
-        PedidoResponseDTO pedido = pedidoService.buscarPorId(id);
-        return ResponseEntity.ok(pedido);
-    } catch (RuntimeException e) {
-        // Se o serviço lançar a exceção, retornamos um 404 Not Found
-        return ResponseEntity.notFound().build();
-    }
-}
-
-@PatchMapping("/{id}/concluir")
-    public ResponseEntity<PedidoResponseDTO> concluirPedido(@PathVariable UUID id) {
+    public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable UUID id) {
         try {
-            PedidoResponseDTO pedidoAtualizado = pedidoService.concluirPedido(id);
-            return ResponseEntity.ok(pedidoAtualizado);
+            PedidoResponseDTO pedido = pedidoService.buscarPorId(id);
+            return ResponseEntity.ok(pedido);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<PedidoResponseDTO> atualizarStatusPedido(@PathVariable UUID id, @RequestBody java.util.Map<String, String> body) {
+        // ... (o resto do seu controller está correto e não precisa de alterações)
+        try {
+            String novoStatusStr = body.get("status");
+            if (novoStatusStr == null || novoStatusStr.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            StatusPedido novoStatus = StatusPedido.valueOf(novoStatusStr.toUpperCase());
+            PedidoResponseDTO pedidoAtualizado = pedidoService.atualizarStatus(id, novoStatus);
+            return ResponseEntity.ok(pedidoAtualizado);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

@@ -2,23 +2,20 @@ package com.ledacosmeticos.api.Repository;
 
 import com.ledacosmeticos.api.Model.Produto;
 import com.ledacosmeticos.api.Model.TipoCategoria;
-
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List; // Adicione a importação
+// --- NOVA IMPORTAÇÃO ---
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor; 
+import java.util.List;
 import java.util.UUID;
 
-public interface ProdutoRepository extends JpaRepository<Produto, UUID> {
+// --- ALTERAÇÃO AQUI ---
+public interface ProdutoRepository extends JpaRepository<Produto, UUID>, JpaSpecificationExecutor<Produto> {
 
-    // --- NOVOS MÉTODOS ---
-    
-    // Busca todos os produtos que estão marcados como ativos
+    // --- MÉTODOS EXISTENTES (sem alterações) ---
     List<Produto> findByAtivoTrue();
-
-    // Busca produtos ativos que pertencem a uma categoria
     List<Produto> findByCategoriaIdAndAtivoTrue(UUID categoriaId);
-    
-    // Busca produtos ativos pelo nome (para a sua barra de pesquisa)
     List<Produto> findByNomeContainingIgnoreCaseAndAtivoTrue(String nome);
-
     List<Produto> findByCategoriaTipoAndAtivoTrue(TipoCategoria tipo);
+
+    // O método antigo @Query("SELECT p FROM Produto p...") foi removido.
 }

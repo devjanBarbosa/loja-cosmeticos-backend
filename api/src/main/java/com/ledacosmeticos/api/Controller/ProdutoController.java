@@ -18,14 +18,44 @@ public class ProdutoController {
     @Autowired
     private ProdutoService produtoService;
 
-    // --- MÉTODO UNIFICADO PARA LISTAR E FILTRAR PRODUTOS ---
-     @GetMapping
+    // ====================================================================
+    // >>> INÍCIO DA CORREÇÃO: REORDENAÇÃO DOS ENDPOINTS <<<
+    // ====================================================================
+
+    // 1. Endpoint específico para o ADMIN (agora vem primeiro)
+    @GetMapping("/admin")
+    public ResponseEntity<List<Produto>> listarProdutosParaAdmin(
+            @RequestParam(name = "nome", required = false) String nome,
+            @RequestParam(name = "categoriaId", required = false) UUID categoriaId,
+            @RequestParam(name = "ativo", required = false) Boolean ativo) {
+        
+        List<Produto> produtos = produtoService.listarParaAdmin(nome, categoriaId, ativo);
+        return ResponseEntity.ok(produtos);
+    }
+    
+    // 2. Endpoint público para pesquisa (também específico)
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Produto>> pesquisarProdutos(@RequestParam("q") String termoDePesquisa) {
+        List<Produto> produtosEncontrados = produtoService.pesquisarPorNome(termoDePesquisa);
+        return ResponseEntity.ok(produtosEncontrados);
+    }
+
+    // 3. Endpoint genérico com variável de caminho (agora vem por último)
+    @GetMapping("/{id}")
+    public ResponseEntity<Produto> buscarProdutoPorId(@PathVariable UUID id) {
+        Optional<Produto> produtoOptional = produtoService.buscarPorId(id);
+        return produtoOptional
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // --- O resto do controller não muda ---
+
+    @GetMapping
     public ResponseEntity<List<Produto>> listarTodosOsProdutos(
             @RequestParam(name = "categoria", required = false) UUID categoriaId,
             @RequestParam(name = "sortBy", required = false) String sortBy,
-            @RequestParam(name = "tipo", required = false) TipoCategoria tipo) { // <-- Adicione este parâmetro
-        
-
+            @RequestParam(name = "tipo", required = false) TipoCategoria tipo) {
         try {
             List<Produto> produtos = produtoService.listarTodos(categoriaId, sortBy, tipo);
             return ResponseEntity.ok(produtos);
@@ -42,20 +72,6 @@ public class ProdutoController {
         return ResponseEntity.status(201).body(novoProduto);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Produto> buscarProdutoPorId(@PathVariable UUID id) {
-        Optional<Produto> produtoOptional = produtoService.buscarPorId(id);
-        return produtoOptional
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-    
-    @GetMapping("/buscar")
-    public ResponseEntity<List<Produto>> pesquisarProdutos(@RequestParam("q") String termoDePesquisa) {
-        List<Produto> produtosEncontrados = produtoService.pesquisarPorNome(termoDePesquisa);
-        return ResponseEntity.ok(produtosEncontrados);
-    }
-
     @PutMapping("/{id}")
     public ResponseEntity<Produto> atualizarProduto(@PathVariable UUID id, @RequestBody Produto produto) {
         try {
@@ -69,7 +85,7 @@ public class ProdutoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarProduto(@PathVariable UUID id) {
         try {
-            produtoService.inativar(id); // Chama o novo método de inativação
+            produtoService.inativar(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

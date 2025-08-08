@@ -2,17 +2,15 @@ package com.ledacosmeticos.api.Config;
 
 import com.ledacosmeticos.api.Security.SecurityFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -31,53 +29,50 @@ public class SecurityConfig {
     @Autowired
     private SecurityFilter securityFilter;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
 
-      @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                
                 .authorizeHttpRequests(authorize -> authorize
-                        // --- REGRAS REORGANIZADAS ---
+                    // ====================================================================
+                    // >>> INÍCIO DA CORREÇÃO: TROCANDO .hasRole por .hasAuthority <<<
+                    // ====================================================================
 
-                        // 1. Permite todas as requisições OPTIONS primeiro.
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        
-                        // 2. Define todos os endpoints PÚBLICOS.
-                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll() // Clientes podem VER a lista de categorias
-                        .requestMatchers(HttpMethod.POST, "/api/categorias").hasRole("ADMIN") // Apenas admins podem CRIAR
-                        .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
-                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN") // Apenas admins podem 
-                        .requestMatchers(HttpMethod.POST, "/api/produtos").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/upload").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/**").hasRole("ADMIN")
+                    // 1. Endpoints de ADMIN (requerem a autoridade exata "ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/upload").hasAuthority("ROLE_ADMIN")
+                    
 
-                        // 4. Qualquer outra requisição precisa estar autenticada.
-                        .anyRequest().authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/categorias").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+
+                    .requestMatchers(HttpMethod.GET, "/api/pedidos/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
+                    
+                    // 2. Endpoints PÚBLICOS
+                    .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                    
+                    // 3. Qualquer outra requisição precisa estar autenticada.
+                    .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+    // ... (o resto do ficheiro não muda)
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -92,13 +87,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // A "lista de permissões"
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        // Métodos permitidos
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // Cabeçalhos permitidos
         configuration.setAllowedHeaders(List.of("*"));
-        // Permite o envio de credenciais (como tokens)
         configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -4,6 +4,7 @@ import com.ledacosmeticos.api.Model.Produto;
 import com.ledacosmeticos.api.Model.TipoCategoria;
 import com.ledacosmeticos.api.Repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification; // <-- NOVA IMPORTAÇÃO
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,29 +18,39 @@ public class ProdutoService {
     @Autowired
     private ProdutoRepository produtoRepository;
 
+    // --- NOVA INJEÇÃO DE DEPENDÊNCIA ---
+    @Autowired
+    private ProdutoSpecification produtoSpecification;
+
+    // ... (os seus outros métodos como cadastrar, atualizar, etc., não mudam)
+
+    // --- MÉTODO ATUALIZADO PARA USAR SPECIFICATIONS ---
+    public List<Produto> listarParaAdmin(String nome, UUID categoriaId, Boolean ativo) {
+        // 1. Pedimos ao nosso construtor para criar a query com os filtros recebidos
+        Specification<Produto> spec = produtoSpecification.findWithFilters(nome, categoriaId, ativo);
+        
+        // 2. O repositório agora sabe como executar esta query programática
+        return produtoRepository.findAll(spec);
+    }
+    
+    // ... (resto do seu serviço)
+    
     // ATUALIZADO: Agora só lista produtos ativos
      public List<Produto> listarTodos(UUID categoriaId, String sortBy, TipoCategoria tipo) {
-        // ... (sua lógica de ordenação continua igual) ...
-
-        // --- LÓGICA DE FILTRO ATUALIZADA ---
         if (categoriaId != null) {
             return produtoRepository.findByCategoriaIdAndAtivoTrue(categoriaId);
         }
         if (tipo != null) {
-            // Se um tipo for fornecido, filtra por ele
             return produtoRepository.findByCategoriaTipoAndAtivoTrue(tipo);
         }
-        
-        // Se nenhum filtro for aplicado, retorna todos os produtos ativos
         return produtoRepository.findByAtivoTrue();
     }
 
     public Produto cadastrar(Produto produto){
-        produto.setAtivo(true); // Garante que o produto seja criado como ativo
+        produto.setAtivo(true);
         return produtoRepository.save(produto);
     }
     
-    // ATUALIZADO: A pesquisa também só retorna produtos ativos
     public List<Produto> pesquisarPorNome(String nome) {
         return produtoRepository.findByNomeContainingIgnoreCaseAndAtivoTrue(nome);
     }
@@ -62,13 +73,12 @@ public class ProdutoService {
         return produtoRepository.save(produtoExistente);
     }
 
-    // RENOMEADO E ATUALIZADO: De deletar para inativar
     @Transactional
     public void inativar(UUID id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado para inativar!"));
         
-        produto.setAtivo(false); // Apenas marca como inativo
+        produto.setAtivo(false);
         produtoRepository.save(produto);
     }
 }
