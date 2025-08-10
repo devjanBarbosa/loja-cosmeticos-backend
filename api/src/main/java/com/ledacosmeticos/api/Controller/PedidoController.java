@@ -1,5 +1,6 @@
 package com.ledacosmeticos.api.Controller;
 
+import com.ledacosmeticos.api.DTO.PedidoRequestDTO;
 import com.ledacosmeticos.api.DTO.PedidoResponseDTO;
 import com.ledacosmeticos.api.Model.Pedido;
 import com.ledacosmeticos.api.Model.StatusPedido;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map; // Adicione esta importação
 import java.util.UUID;
 
 @RestController
@@ -18,17 +20,25 @@ public class PedidoController {
     @Autowired
     private PedidoService pedidoService;
 
+    // ====================================================================
+    // >>> MÉTODO criarPedido CORRIGIDO <<<
+    // ====================================================================
     @PostMapping
-    // --- CORREÇÃO AQUI ---
-    // Adicionámos o nome "pedidoDTO" à variável
-    public ResponseEntity<Pedido> criarPedido(@RequestBody PedidoRequestDTO pedidoDTO) { 
+    public ResponseEntity<?> criarPedido(@RequestBody PedidoRequestDTO pedidoDTO) { 
         try {
-            // Agora a variável 'pedidoDTO' existe e pode ser usada
+            // A chamada ao serviço permanece a mesma
             Pedido novoPedido = pedidoService.criar(pedidoDTO); 
+            // Retorna o pedido completo com os dados do PIX (se aplicável)
             return ResponseEntity.status(201).body(novoPedido);
+
         } catch (RuntimeException e) {
+            // Se o PedidoService lançar uma exceção (ex: falha ao gerar PIX), nós a capturamos aqui.
+            System.err.println("### ERRO NO CONTROLLER AO CRIAR PEDIDO: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null); 
+            
+            // Retornamos uma resposta de erro clara para o frontend.
+            // Usamos um Map para criar um objeto JSON de erro: { "error": "mensagem de erro" }
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); 
         }
     }
 
@@ -50,7 +60,6 @@ public class PedidoController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<PedidoResponseDTO> atualizarStatusPedido(@PathVariable UUID id, @RequestBody java.util.Map<String, String> body) {
-        // ... (o resto do seu controller está correto e não precisa de alterações)
         try {
             String novoStatusStr = body.get("status");
             if (novoStatusStr == null || novoStatusStr.trim().isEmpty()) {

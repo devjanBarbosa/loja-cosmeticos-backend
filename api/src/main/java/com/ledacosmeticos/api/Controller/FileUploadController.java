@@ -18,11 +18,16 @@ public class FileUploadController {
         this.fileStorageService = fileStorageService;
     }
 
+    // --- MÉTODO ATUALIZADO ---
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        String fileName = fileStorageService.storeFile(file);
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            // Recebe o nome do produto como um parâmetro de formulário
+            @RequestParam("productName") String productName) {
+        
+        // Passa o ficheiro e o nome do produto para o serviço
+        String fileName = fileStorageService.storeFile(file, productName);
 
-        // Constrói o URL para aceder ao ficheiro
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/images/")
                 .path(fileName)

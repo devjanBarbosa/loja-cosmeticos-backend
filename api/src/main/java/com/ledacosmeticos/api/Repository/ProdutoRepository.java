@@ -17,5 +17,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, UUID>, JpaSpec
     List<Produto> findByNomeContainingIgnoreCaseAndAtivoTrue(String nome);
     List<Produto> findByCategoriaTipoAndAtivoTrue(TipoCategoria tipo);
 
-    // O método antigo @Query("SELECT p FROM Produto p...") foi removido.
+       List<Produto> findTop5ByEstoqueGreaterThanOrderByEstoqueAsc(int minEstoque);
+
+       
 }

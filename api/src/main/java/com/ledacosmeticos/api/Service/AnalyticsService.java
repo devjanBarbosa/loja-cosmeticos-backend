@@ -1,13 +1,18 @@
 package com.ledacosmeticos.api.Service;
 
 import com.ledacosmeticos.api.DTO.DashboardDTO;
-import com.ledacosmeticos.api.Model.Pedido;
-import com.ledacosmeticos.api.Model.StatusPedido;
+import com.ledacosmeticos.api.DTO.ProdutoEstoqueBaixoDTO;
+import com.ledacosmeticos.api.DTO.UltimoPedidoDTO;
+import com.ledacosmeticos.api.DTO.VendasDiariasDTO;
+import com.ledacosmeticos.api.DTO.ProdutoMaisVendidoDTO;
 import com.ledacosmeticos.api.Repository.PedidoRepository;
+import com.ledacosmeticos.api.Repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,33 +23,56 @@ public class AnalyticsService {
     @Autowired
     private PedidoRepository pedidoRepository;
 
+    @Autowired
+    private ProdutoRepository produtoRepository;
+
     @Transactional(readOnly = true)
-    public DashboardDTO getDashboardData() {
-        // Buscamos apenas os pedidos que foram concluídos (ENTREGUE)
-        List<Pedido> pedidosConcluidos = pedidoRepository.findByStatus(StatusPedido.ENTREGUE);
+    public DashboardDTO getDashboardData(String periodo) {
+        LocalDateTime dataInicio;
+        switch (periodo.toLowerCase()) {
+            case "dia":
+                dataInicio = LocalDate.now().atStartOfDay();
+                break;
+            case "semana":
+                dataInicio = LocalDate.now().minusDays(7).atStartOfDay();
+                break;
+            default:
+                dataInicio = LocalDate.now().minusDays(30).atStartOfDay();
+                break;
+        }
 
-        // 1. Calcular Métricas Principais
-        double faturamentoTotal = pedidosConcluidos.stream()
-                .mapToDouble(Pedido::getValorTotal)
-                .sum();
-        
-        long totalDePedidos = pedidosConcluidos.size();
-        
+        List<Object[]> vendasConcluidasPeriodo = pedidoRepository.findVendasConcluidasDesde(dataInicio);
+        double faturamentoTotal = vendasConcluidasPeriodo.stream().mapToDouble(p -> (Double) p[1]).sum();
+        long totalDePedidos = vendasConcluidasPeriodo.size();
         double ticketMedio = (totalDePedidos > 0) ? faturamentoTotal / totalDePedidos : 0;
+        List<Map<String, Object>> vendasPorCategoria = pedidoRepository.findVendasPorCategoriaDesde(dataInicio);
 
-        // 2. Calcular Vendas por Categoria
-        List<Map<String, Object>> vendasPorCategoria = pedidoRepository.findVendasPorCategoria();
+        // --- CORREÇÃO AQUI ---
+        // Agora chamamos o construtor do DTO independente
+        List<ProdutoMaisVendidoDTO> produtosMaisVendidos = pedidoRepository.findProdutosMaisVendidosDesde(dataInicio).stream()
+                .map(result -> new ProdutoMaisVendidoDTO( // Sem o "DashboardDTO."
+                        (String) result[0], (long) result[1], (double) result[2]))
+                .limit(5).collect(Collectors.toList());
 
-        // 3. Calcular Produtos Mais Vendidos
-        List<DashboardDTO.ProdutoMaisVendidoDTO> produtosMaisVendidos = pedidoRepository.findProdutosMaisVendidos().stream()
-                .map(result -> new DashboardDTO.ProdutoMaisVendidoDTO(
-                        (String) result[0], // Nome do produto
-                        (long) result[1],   // Quantidade vendida
-                        (double) result[2]  // Faturamento gerado
-                ))
-                .limit(5) // Limitamos aos 5 produtos mais vendidos
+        List<VendasDiariasDTO> vendasDiarias = pedidoRepository.findVendasDiariasDesde(dataInicio).stream()
+                .map(result -> new VendasDiariasDTO(
+                        result[0].toString(), (double) result[1]))
                 .collect(Collectors.toList());
 
-        return new DashboardDTO(faturamentoTotal, totalDePedidos, ticketMedio, produtosMaisVendidos, vendasPorCategoria);
+        List<UltimoPedidoDTO> ultimosPedidos = pedidoRepository.findTop5Recentes().stream()
+                .map(p -> new UltimoPedidoDTO(
+                        p.getId().toString(), p.getCliente().getNome(), p.getValorTotal(), p.getStatus().toString()))
+                .collect(Collectors.toList());
+
+        List<ProdutoEstoqueBaixoDTO> produtosComEstoqueBaixo = produtoRepository.findTop5ByEstoqueGreaterThanOrderByEstoqueAsc(0).stream()
+                .filter(p -> p.getEstoque() <= 5)
+                .map(p -> new ProdutoEstoqueBaixoDTO(
+                        p.getId().toString(), p.getNome(), p.getEstoque()))
+                .collect(Collectors.toList());
+
+        return new DashboardDTO(
+                faturamentoTotal, totalDePedidos, ticketMedio,
+                produtosMaisVendidos, vendasPorCategoria, vendasDiarias,
+                ultimosPedidos, produtosComEstoqueBaixo);
     }
 }
