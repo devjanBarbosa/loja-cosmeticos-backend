@@ -57,4 +57,25 @@ public class PixService {
         // Agora o método está ciente de que esta linha pode lançar uma exceção
         return client.create(createRequest);
     }
+
+      public Payment buscarPagamentoPorId(String paymentId) throws MPException, MPApiException {
+        if (paymentId == null || paymentId.trim().isEmpty()) {
+            throw new IllegalArgumentException("O ID do pagamento não pode ser nulo ou vazio.");
+        }
+        
+        try {
+            // O ID do pagamento do Mercado Pago é um número (Long)
+            Long id = Long.parseLong(paymentId);
+
+            // Cria um cliente da API de pagamentos
+            PaymentClient client = new PaymentClient();
+            
+            // Busca o pagamento pelo ID
+            return client.get(id);
+            
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("O ID do pagamento fornecido não é um número válido.", e);
+        }
+    }
+    
 }

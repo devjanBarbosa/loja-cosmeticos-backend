@@ -49,7 +49,9 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.PATCH, "/api/pedidos/**/status").hasAuthority("ROLE_ADMIN")
+                    // --- CORREÇÃO AQUI ---
+                    // Trocamos '/**/' por '/*/' para corresponder a um ID de pedido específico.
+                    .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
                     
                     // 2. Endpoints PÚBLICOS
                     .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
@@ -69,8 +71,7 @@ public class SecurityConfig {
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-    // ... (o resto do ficheiro não muda)
-
+    
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

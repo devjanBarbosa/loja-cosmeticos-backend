@@ -5,16 +5,18 @@ import java.util.List;
 import com.ledacosmeticos.api.Model.StatusPedido;
 import com.ledacosmeticos.api.Model.TipoEntrega;
 
-// Adicione todos os campos que o frontend precisa de ver
+
 public record PedidoResponseDTO(
     String id,
-    LocalDateTime dataDoPedido,
+    LocalDateTime dataCriacao,      // CORRIGIDO: Nome alinhado com o frontend
     String nomeCliente,
     String whatsappCliente,
     StatusPedido status,
+    Double subtotal,                // ADICIONADO
+    Double taxaEntrega,             // ADICIONADO
     Double valorTotal,
     List<ItemPedidoResponseDTO> itens,
-    TipoEntrega tipoEntrega,
+    TipoEntrega metodoEntrega,      // CORRIGIDO: Nome alinhado com o frontend
     String metodoPagamento,
     String cep,
     String endereco,

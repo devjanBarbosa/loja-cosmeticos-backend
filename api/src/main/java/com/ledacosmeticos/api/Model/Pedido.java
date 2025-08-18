@@ -18,28 +18,34 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     
-    private LocalDateTime dataDoPedido;
+    // CORRIGIDO: Nome do campo alinhado com o DTO e o frontend
+    private LocalDateTime dataCriacao;
     
     @Enumerated(EnumType.STRING)
     private StatusPedido status;
+    
+    // ADICIONADO: Campo para o subtotal
+    private Double subtotal;
+
+    // ADICIONADO: Campo para a taxa de entrega
+    private Double taxaEntrega;
     
     private Double valorTotal;
     
     @Enumerated(EnumType.STRING)
     private TipoEntrega tipoEntrega;
-    private String cep;
-    private String endereco;
-    private String numero;
-    private String complemento;
-    private String bairro;
+    
     private String metodoPagamento;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "endereco_id", referencedColumnName = "id")
+    private Endereco endereco;
 
-     // --- NOVOS CAMPOS PARA O PIX ---
-    @Column(columnDefinition = "TEXT") // Para o código longo do "copia e cola"
+    // --- CAMPOS PARA O PIX ---
+    @Column(columnDefinition = "TEXT")
     private String pixCopiaECola;
 
-    @Column(columnDefinition = "TEXT") // Para a imagem do QR Code em base64
+    @Column(columnDefinition = "TEXT")
     private String pixQrCodeBase64;
 
     private String pixTransactionId; 
