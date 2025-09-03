@@ -9,8 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@JacksonXmlRootElement(localName = "urlset", namespace = "http://www.sitemaps.org/schemas/sitemap/0.9")
+@JacksonXmlRootElement(localName = "urlset")
 public class UrlSet {
+
+    @JacksonXmlProperty(isAttribute = true, localName = "xmlns")
+    private String xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
     @JacksonXmlElementWrapper(useWrapping = false)
     @JacksonXmlProperty(localName = "url")
