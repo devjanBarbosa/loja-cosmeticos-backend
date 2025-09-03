@@ -21,7 +21,7 @@ public class SitemapService {
     @Autowired
     private CategoriaRepository categoriaRepository;
 
-    private final String BASE_URL = "https://www.ledacosmeticos.com.br"; // Lembre-se de mudar para o seu domínio real
+    private final String BASE_URL = "https://www.ledacosmeticos.com.br"; 
 
     public UrlSet createSitemap() {
         UrlSet urlSet = new UrlSet();
