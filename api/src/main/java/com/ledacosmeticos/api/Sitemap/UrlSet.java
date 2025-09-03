@@ -11,6 +11,6 @@ import java.util.List;
 @JacksonXmlRootElement(localName = "urlset", namespace = "http://www.sitemaps.org/schemas/sitemap/0.9")
 public class UrlSet {
     @JacksonXmlElementWrapper(useWrapping = false)
-    @JacksonXmlProperty(localName = "url")
+    @JacksonXmlProperty(localName = "url", namespace = "http://www.sitemaps.org/schemas/sitemap/0.9")
     private List<Url> url = new ArrayList<>();
 }
