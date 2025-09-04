@@ -33,43 +33,49 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        // 1. Endpoints de ADMIN
-                        .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/upload").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categorias").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
-                        
-                        // 2. Endpoints PÚBLICOS
-                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/reviews/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
-                        
-                        // 3. Qualquer outra requisição precisa estar autenticada.
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    return http
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authorize -> authorize
+                    // 1. Permite todas as requisições OPTIONS (para corrigir o erro de CORS no login)
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                    // 2. Endpoints de ADMIN (sem alterações)
+                    .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/upload").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/categorias").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
+
+                    // 3. Endpoints PÚBLICOS (com as correções)
+                    .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,"/api/reviews/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
+                    // CORREÇÃO: Permite /api/produtos e /api/produtos?com_parametros
+                    .requestMatchers(HttpMethod.GET, "/api/produtos").permitAll() 
+                    .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
+                    // CORREÇÃO: Permite /api/categorias e /api/categorias?com_parametros
+                    .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll() 
+                    .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
+
+                    // 4. Qualquer outra requisição precisa estar autenticada.
+                    .anyRequest().authenticated()
+            )
+            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+            .build();
+}
     
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
