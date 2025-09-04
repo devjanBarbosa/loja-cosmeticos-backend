@@ -16,6 +16,7 @@ public class GoogleReviewsService {
     // --- CORREÇÃO AQUI ---
     // Mudamos o tipo de retorno de String para Object
     public Object fetchReviews() {
+         System.out.println(">>> GoogleReviewsService: Tentando usar a chave de API que termina em: " + (apiKey != null ? apiKey.substring(apiKey.length() - 6) : "CHAVE NULA"));
         RestTemplate restTemplate = new RestTemplate();
         String url = String.format(
             "https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&fields=name,rating,reviews&language=pt_BR&key=%s",

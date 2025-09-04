@@ -67,7 +67,6 @@ public class SecurityConfig {
                         
                         // CORREÇÃO: Permite GET em /api/categorias E /api/categorias?com_parametros
                         .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/categorias/**").permitAll() 
-                        
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
