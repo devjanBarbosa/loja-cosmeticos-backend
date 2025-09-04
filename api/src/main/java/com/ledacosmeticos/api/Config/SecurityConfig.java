@@ -39,10 +39,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // 1. CORREÇÃO: Permite todos os pedidos OPTIONS de pré-verificação (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 2. Endpoints de ADMIN (sem alterações)
+                        // Endpoints de ADMIN
                         .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
@@ -54,24 +53,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
                         
-                        // 3. Endpoints PÚBLICOS (com as regras corrigidas e simplificadas)
+                        // Endpoints PÚBLICOS
                         .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/produtos", "/api/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/categorias/**").permitAll()
                         
-                        // CORREÇÃO: Permite GET em /api/produtos, /api/produtos/ID, E /api/produtos?com_parametros
-                        .requestMatchers(HttpMethod.GET, "/api/produtos", "/api/produtos/**").permitAll() 
-                        
-                        // CORREÇÃO: Permite GET em /api/categorias E /api/categorias?com_parametros
-                        .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/categorias/**").permitAll() 
+                        // --- GARANTE QUE A PASTA DE IMAGENS SEJA PÚBLICA ---
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                        
                         .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
                         
-                        // 4. Qualquer outra requisição precisa de estar autenticada.
+                        // Qualquer outra requisição precisa estar autenticada.
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
@@ -91,7 +89,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // A sua configuração de CORS já estava correta, lendo as origens permitidas
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -102,3 +99,4 @@ public class SecurityConfig {
         return source;
     }
 }
+
