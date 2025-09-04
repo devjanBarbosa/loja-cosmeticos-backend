@@ -19,4 +19,6 @@ public class Categoria {
     // --- CAMPO ADICIONADO ---
     @Enumerated(EnumType.STRING)
     private TipoCategoria tipo;
+
+     private String urlImagem;
 }

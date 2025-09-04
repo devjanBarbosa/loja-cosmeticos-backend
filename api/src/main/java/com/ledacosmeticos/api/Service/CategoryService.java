@@ -34,7 +34,8 @@ public class CategoryService {
                 .orElseThrow(() -> new RuntimeException("Categoria não encontrada com ID: " + id));
         
         categoriaExistente.setNome(categoriaDados.getNome());
-        categoriaExistente.setTipo(categoriaDados.getTipo()); // Permite alterar o tipo também
+        categoriaExistente.setTipo(categoriaDados.getTipo());
+         categoriaExistente.setUrlImagem(categoriaDados.getUrlImagem()); // Permite alterar o tipo também
         
         return categoriaRepository.save(categoriaExistente);
     }

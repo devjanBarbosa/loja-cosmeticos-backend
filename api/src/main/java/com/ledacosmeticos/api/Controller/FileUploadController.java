@@ -4,8 +4,6 @@ import com.ledacosmeticos.api.Service.FileStorageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 import java.util.Map;
 
 @RestController
@@ -18,21 +16,18 @@ public class FileUploadController {
         this.fileStorageService = fileStorageService;
     }
 
-    // --- MÉTODO ATUALIZADO ---
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(
             @RequestParam("file") MultipartFile file,
-            // Recebe o nome do produto como um parâmetro de formulário
             @RequestParam("productName") String productName) {
         
-        // Passa o ficheiro e o nome do produto para o serviço
         String fileName = fileStorageService.storeFile(file, productName);
 
-        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/images/")
-                .path(fileName)
-                .toUriString();
+        // --- CORREÇÃO PRINCIPAL AQUI ---
+        // Agora retornamos apenas o caminho relativo para a imagem.
+        // O frontend será responsável por saber como exibi-la.
+        String relativePath = "/images/" + fileName;
 
-        return ResponseEntity.ok(Map.of("url", fileDownloadUri));
+        return ResponseEntity.ok(Map.of("url", relativePath));
     }
 }
