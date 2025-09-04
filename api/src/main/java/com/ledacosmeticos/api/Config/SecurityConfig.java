@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/produtos", "/api/produtos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/categorias/**").permitAll()
+                        .requestMatchers("/api/cep/**").permitAll()
                         
                         // --- GARANTE QUE A PASTA DE IMAGENS SEJA PÚBLICA ---
                         .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
