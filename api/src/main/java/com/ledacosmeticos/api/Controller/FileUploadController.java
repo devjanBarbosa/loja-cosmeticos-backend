@@ -1,6 +1,6 @@
 package com.ledacosmeticos.api.Controller;
 
-import com.ledacosmeticos.api.Service.FileStorageService;
+import com.ledacosmeticos.api.Service.S3Service; // 1. Importe o novo serviço S3
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -10,10 +10,12 @@ import java.util.Map;
 @RequestMapping("/api")
 public class FileUploadController {
 
-    private final FileStorageService fileStorageService;
+    // 2. Mude a dependência de FileStorageService para S3Service
+    private final S3Service s3Service;
 
-    public FileUploadController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
+    // 3. Atualize o construtor para injetar o S3Service
+    public FileUploadController(S3Service s3Service) {
+        this.s3Service = s3Service;
     }
 
     @PostMapping("/upload")
@@ -21,13 +23,12 @@ public class FileUploadController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("productName") String productName) {
         
-        String fileName = fileStorageService.storeFile(file, productName);
+        // 4. Chame o método do S3Service para fazer o upload
+        String fileUrl = s3Service.uploadFile(file, productName);
 
-        // --- CORREÇÃO PRINCIPAL AQUI ---
-        // Agora retornamos apenas o caminho relativo para a imagem.
-        // O frontend será responsável por saber como exibi-la.
-        String relativePath = "/images/" + fileName;
-
-        return ResponseEntity.ok(Map.of("url", relativePath));
+        // 5. O S3Service já retorna o URL público completo da imagem.
+        //    Basta retorná-lo diretamente para o frontend.
+        return ResponseEntity.ok(Map.of("url", fileUrl));
     }
 }
+
