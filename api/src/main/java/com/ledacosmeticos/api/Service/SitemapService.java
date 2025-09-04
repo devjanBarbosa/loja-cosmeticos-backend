@@ -1,7 +1,5 @@
 package com.ledacosmeticos.api.Service;
 
-import com.ledacosmeticos.api.Model.Categoria;
-import com.ledacosmeticos.api.Model.Produto;
 import com.ledacosmeticos.api.Repository.CategoriaRepository;
 import com.ledacosmeticos.api.Repository.ProdutoRepository;
 import com.ledacosmeticos.api.Sitemap.Url;

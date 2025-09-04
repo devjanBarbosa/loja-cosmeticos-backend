@@ -19,6 +19,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -32,49 +33,52 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    return http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authorize -> authorize
-                    // 1. Permite todas as requisições OPTIONS (para corrigir o erro de CORS no login)
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        // 1. CORREÇÃO: Permite todos os pedidos OPTIONS de pré-verificação (CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                    // 2. Endpoints de ADMIN (sem alterações)
-                    .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/upload").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/categorias").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
-
-                    // 3. Endpoints PÚBLICOS (com as correções)
-                    .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
-                    .requestMatchers(HttpMethod.GET,"/api/reviews/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
-                    // CORREÇÃO: Permite /api/produtos e /api/produtos?com_parametros
-                    .requestMatchers(HttpMethod.GET, "/api/produtos").permitAll() 
-                    .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                    // CORREÇÃO: Permite /api/categorias e /api/categorias?com_parametros
-                    .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll() 
-                    .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
-
-                    // 4. Qualquer outra requisição precisa estar autenticada.
-                    .anyRequest().authenticated()
-            )
-            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-            .build();
-}
+                        // 2. Endpoints de ADMIN (sem alterações)
+                        .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/produtos").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/upload").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/categorias").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
+                        
+                        // 3. Endpoints PÚBLICOS (com as regras corrigidas e simplificadas)
+                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
+                        
+                        // CORREÇÃO: Permite GET em /api/produtos, /api/produtos/ID, E /api/produtos?com_parametros
+                        .requestMatchers(HttpMethod.GET, "/api/produtos", "/api/produtos/**").permitAll() 
+                        
+                        // CORREÇÃO: Permite GET em /api/categorias E /api/categorias?com_parametros
+                        .requestMatchers(HttpMethod.GET, "/api/categorias", "/api/categorias/**").permitAll() 
+                        
+                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
+                        
+                        // 4. Qualquer outra requisição precisa de estar autenticada.
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+    
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -88,15 +92,12 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Se quiser vários domínios no application.properties separados por vírgula
-        configuration.setAllowedOriginPatterns(List.of(allowedOrigins.split(",")));
-
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        // A sua configuração de CORS já estava correta, lendo as origens permitidas
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // Cache da preflight request
-
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
