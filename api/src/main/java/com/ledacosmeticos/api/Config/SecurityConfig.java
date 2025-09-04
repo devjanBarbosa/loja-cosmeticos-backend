@@ -32,7 +32,6 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-<<<<<<< HEAD
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http
             .csrf(csrf -> csrf.disable())
@@ -76,57 +75,6 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
 }
-    
-=======
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                // Desativa CSRF (API Stateless)
-                .csrf(csrf -> csrf.disable())
-                // Configuração CORS customizada
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Sem sessão no servidor
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Regras de acesso
-                .authorizeHttpRequests(authorize -> authorize
-                        // 1. Endpoints ADMIN
-                        .requestMatchers(HttpMethod.GET, "/api/produtos/admin").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/produtos").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/produtos/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/produtos/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/upload").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categorias").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasRole("ADMIN")
-
-                        // 2. Endpoints Públicos
-                        .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hash/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categorias").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/sitemap.xml").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/config/taxa-entrega").permitAll()
-
-                        // 3. Qualquer outra API exige login
-                        .requestMatchers("/api/**").authenticated()
-                        // 4. Recursos estáticos liberados (se houver)
-                        .anyRequest().permitAll()
-                )
-                // Headers extras de segurança
-                .headers(headers -> headers
-                    .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
-                    .frameOptions(frame -> frame.deny()))
-                // Filtro JWT customizado
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }
-
->>>>>>> 27cd427c9fccf78c4d94f563c3aa027bdd4866d7
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
