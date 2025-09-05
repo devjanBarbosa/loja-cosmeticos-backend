@@ -24,10 +24,13 @@ target/
 /nbbuild/
 /dist/
 /nbdist/
-/.nb-gradle/
+.nb-gradle/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
 ### VS Code ###
 .vscode/
+
+### Arquivos de configuração local ###
+/src/main/resources/application-dev.properties
