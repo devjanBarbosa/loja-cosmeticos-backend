@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Service
 public class PixService {
@@ -41,12 +43,14 @@ public class PixService {
         String emailCliente = (clienteDoPedido.getEmail() != null && !clienteDoPedido.getEmail().isEmpty())
             ? clienteDoPedido.getEmail()
             : "cliente+" + clienteDoPedido.getWhatsapp() + "@ledacosmeticos.com";
+             OffsetDateTime dataExpiracao = OffsetDateTime.now(ZoneOffset.of("-03:00")).plusMinutes(10);
 
         PaymentCreateRequest createRequest =
             PaymentCreateRequest.builder()
                 .transactionAmount(new BigDecimal(pedido.getValorTotal()))
                 .description("Pedido #" + pedido.getId().toString().substring(0, 8) + " - Leda Cosméticos")
                 .paymentMethodId("pix")
+                .dateOfExpiration(dataExpiracao)
                 .payer(
                     PaymentPayerRequest.builder()
                         .email(emailCliente)
