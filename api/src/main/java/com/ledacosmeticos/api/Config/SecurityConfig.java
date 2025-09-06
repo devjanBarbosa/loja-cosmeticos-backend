@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/pedidos/*/status").hasAuthority("ROLE_ADMIN")
                         
                         // Endpoints PÚBLICOS
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/mercadopago").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/**").permitAll()
