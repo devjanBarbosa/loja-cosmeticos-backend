@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal; // 1. Use BigDecimal para cálculos monetários
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -222,46 +221,37 @@ private PedidoResponseDTO convertToDto(Pedido pedido) {
 }
 
      @Transactional
-public void processarNotificacaoPagamento(String paymentId) {
-    try {
-        // 1. Busca os detalhes do pagamento na API do Mercado Pago
-        Payment pagamento = pixService.buscarPagamentoPorId(paymentId);
+    public void processarNotificacaoPagamento(String paymentId) {
+        try {
+            // 1. Busca os detalhes do pagamento na API do Mercado Pago para confirmar o status
+            Payment pagamento = pixService.buscarPagamentoPorId(paymentId);
 
-        // 2. Encontra o pedido correspondente no nosso banco de dados
-        Optional<Pedido> pedidoOptional = pedidoRepository.findByPixTransactionId(paymentId);
+            // 2. Verifica se o pagamento foi aprovado
+            if (pagamento != null && "approved".equals(pagamento.getStatus())) {
+                System.out.println(">>> Pagamento ID " + paymentId + " foi aprovado.");
 
-        // --- CORREÇÃO PRINCIPAL AQUI ---
-        // 3. Se o pedido não existe no nosso sistema, apenas registramos e saímos.
-        if (pedidoOptional.isEmpty()) {
-            System.out.println(">>> Notificação recebida para o paymentId " + paymentId + ", mas nenhum pedido correspondente foi encontrado. Ignorando.");
-            // Não é um erro, então não lançamos exceção.
-            return;
-        }
+                // 3. Encontra o pedido correspondente no nosso banco de dados
+                Pedido pedido = pedidoRepository.findByPixTransactionId(paymentId)
+                    .orElseThrow(() -> new RuntimeException("Pedido não encontrado para o paymentId: " + paymentId));
 
-        Pedido pedido = pedidoOptional.get();
-
-        // 4. Verifica se o pagamento foi aprovado
-        if (pagamento != null && "approved".equals(pagamento.getStatus())) {
-            System.out.println(">>> Pagamento ID " + paymentId + " foi aprovado.");
-
-            // 5. Atualiza o status do pedido, se ele ainda estiver pendente
-            if (pedido.getStatus() == StatusPedido.PENDENTE) {
-                pedido.setStatus(StatusPedido.EM_PREPARACAO);
-                pedidoRepository.save(pedido);
-                System.out.println(">>> Pedido ID " + pedido.getId() + " atualizado para EM PREPARAÇÃO.");
+                // 4. Atualiza o status do pedido, se ele ainda estiver pendente
+                if (pedido.getStatus() == StatusPedido.PENDENTE) {
+                    pedido.setStatus(StatusPedido.EM_PREPARACAO);
+                    pedidoRepository.save(pedido);
+                    System.out.println(">>> Pedido ID " + pedido.getId() + " atualizado para EM PREPARAÇÃO.");
+                } else {
+                    System.out.println(">>> Pedido ID " + pedido.getId() + " já foi processado. Status atual: " + pedido.getStatus());
+                }
             } else {
-                System.out.println(">>> Pedido ID " + pedido.getId() + " já foi processado. Status atual: " + pedido.getStatus());
+                System.out.println(">>> Pagamento ID " + paymentId + " não foi aprovado. Status: " + (pagamento != null ? pagamento.getStatus() : "N/A"));
+                // Opcional: Implementar lógica para pagamentos rejeitados (ex: cancelar pedido)
             }
-        } else {
-            System.out.println(">>> Pagamento ID " + paymentId + " não foi aprovado. Status: " + (pagamento != null ? pagamento.getStatus() : "N/A"));
-            // Opcional: Implementar lógica para pagamentos rejeitados (ex: cancelar pedido)
-        }
 
-    } catch (Exception e) {
-        System.err.println("### ERRO ao processar notificação para o paymentId " + paymentId + ": " + e.getMessage());
-        e.printStackTrace();
-        // Lançar a exceção aqui ainda é importante para erros REAIS (ex: falha de conexão com BD)
-        throw new RuntimeException("Falha ao processar notificação de pagamento.", e);
+        } catch (Exception e) {
+            System.err.println("### ERRO ao processar notificação para o paymentId " + paymentId + ": " + e.getMessage());
+            e.printStackTrace();
+            // Lançar uma exceção garante que, se algo falhar, a transação seja desfeita.
+            throw new RuntimeException("Falha ao processar notificação de pagamento.", e);
+        }
     }
-}
 }
